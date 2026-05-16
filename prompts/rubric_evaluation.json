@@ -1,0 +1,28 @@
+{
+  "_meta": {
+    "evaluated_by": "Claude claude-opus-4-5 (used as the prompt evaluator per assignment instructions)",
+    "evaluated_on": "2025-05-16",
+    "prompt_file": "prompts/system_prompt.md",
+    "evaluator_prompt": "You are a Prompt Evaluation Assistant. Review this prompt and assess how well it supports structured, step-by-step reasoning in an LLM."
+  },
+  "explicit_reasoning": true,
+  "structured_output": true,
+  "tool_separation": true,
+  "conversation_loop": true,
+  "instructional_framing": true,
+  "internal_self_checks": true,
+  "reasoning_type_awareness": true,
+  "fallbacks": true,
+  "overall_clarity": "Excellent. The prompt defines 4 strict JSON schemas, 7 numbered rules, a complete worked example with 6 turns, and explicit fallback/uncertainty handling. Mental-math prohibition eliminates a major hallucination vector. Reasoning-type tagging on every step makes the chain-of-thought auditable. Self-check is mandatory (not optional), and fallback_advice is a required field in FINAL_ANSWER. Suitable for production agentic use.",
+  "per_criterion_notes": {
+    "explicit_reasoning": "Rule 1 mandates ≥2 REASONING_STEP blocks before any tool call. 'Think before computing' is spelled out.",
+    "structured_output": "Four Pydantic-compatible JSON schemas with required fields, literals, and validation rules. Output is deterministic and parseable.",
+    "tool_separation": "REASONING_STEP and FUNCTION_CALL are distinct schemas. Rule 3 explicitly bans computed numbers inside reasoning steps. Mental math is forbidden in Rule 2.",
+    "conversation_loop": "Rule 7 addresses multi-turn explicitly. step_number is monotonically increasing. Tool results are injected as user messages for full context continuity.",
+    "instructional_framing": "Complete 6-turn worked example with exact JSON for each schema type. All four schemas demonstrated in context.",
+    "internal_self_checks": "Schema C (SELF_CHECK) is a first-class response type. Rule 4 makes it mandatory before FINAL_ANSWER. Four verification methods defined.",
+    "reasoning_type_awareness": "reasoning_type is a required field with 7 defined literals. Every reasoning step must be tagged.",
+    "fallbacks": "Rule 6 specifies exactly what to do when a tool fails: assumption step → lower confidence → populate fallback_advice. fallback_advice is a required field in FINAL_ANSWER.",
+    "overall_clarity": "The prompt is self-contained. A developer could implement the system from this prompt alone. Risk of drift or hallucination is low due to schema enforcement and the mental-math prohibition."
+  }
+}

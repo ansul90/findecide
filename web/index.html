@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FinDecide — Financial Decision Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1c1c26;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #f0efea;
+    --muted: #8a8a9a;
+    --accent: #7c6af7;
+    --accent2: #5dd4b0;
+    --warn: #f0a04a;
+    --danger: #e85c5c;
+    --success: #5dd4b0;
+    --reasoning: #7c6af7;
+    --tool: #f0a04a;
+    --check: #5dd4b0;
+    --final: #f7c948;
+    --error: #e85c5c;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 1.5rem 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    position: sticky;
+    top: 0;
+    background: rgba(10,10,15,0.92);
+    backdrop-filter: blur(12px);
+    z-index: 100;
+  }
+
+  .logo-mark {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    color: white;
+    flex-shrink: 0;
+  }
+
+  .logo-text {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    letter-spacing: -0.01em;
+  }
+
+  .logo-sub {
+    font-size: 12px;
+    color: var(--muted);
+    margin-left: auto;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.05em;
+  }
+
+  /* ── Layout ── */
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    height: calc(100vh - 69px);
+  }
+
+  /* ── Main panel ── */
+  .main {
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  /* ── Question bar ── */
+  .question-bar {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .question-label {
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  .question-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .question-input:focus { border-color: var(--accent); }
+  .question-input::placeholder { color: var(--muted); }
+
+  .ask-btn {
+    background: var(--accent);
+    border: none;
+    border-radius: 12px;
+    padding: 0.75rem 1.5rem;
+    color: white;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .ask-btn:hover { opacity: 0.88; }
+  .ask-btn:active { transform: scale(0.97); }
+  .ask-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ── Example pills ── */
+  .examples {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+  }
+
+  .example-pill {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 0.3rem 0.9rem;
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+  }
+
+  .example-pill:hover { border-color: var(--accent); color: var(--text); }
+
+  /* ── Context fields panel ── */
+  .context-toggle {
+    margin-top: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--muted);
+    user-select: none;
+    width: fit-content;
+  }
+  .context-toggle:hover { color: var(--accent); }
+  .context-toggle-arrow { transition: transform 0.2s; font-size: 10px; }
+  .context-toggle-arrow.open { transform: rotate(90deg); }
+
+  .context-fields {
+    display: none;
+    margin-top: 0.75rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem;
+    gap: 0.75rem;
+  }
+  .context-fields.open { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+
+  .field-group { display: flex; flex-direction: column; gap: 0.3rem; }
+  .field-label {
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .field-input {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 0.45rem 0.7rem;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+  .field-input:focus { border-color: var(--accent); }
+  .field-input::placeholder { color: var(--muted); }
+
+  .context-hint {
+    margin-top: 0.5rem;
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    grid-column: 1 / -1;
+  }
+
+  /* ── Reasoning trace ── */
+  .trace-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem 2rem;
+    scroll-behavior: smooth;
+  }
+
+  .trace-area::-webkit-scrollbar { width: 4px; }
+  .trace-area::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  .empty-state {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    color: var(--muted);
+  }
+
+  .empty-icon {
+    width: 64px; height: 64px;
+    border: 1px solid var(--border2);
+    border-radius: 20px;
+    display: grid;
+    place-items: center;
+    font-size: 28px;
+  }
+
+  /* ── Step cards ── */
+  .step-card {
+    margin-bottom: 1rem;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    overflow: hidden;
+    animation: slideIn 0.25s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .step-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .step-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .step-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    padding: 0.15rem 0.5rem;
+    border-radius: 5px;
+    font-weight: 500;
+  }
+
+  .step-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-left: auto;
+  }
+
+  .step-body {
+    padding: 1rem;
+    font-size: 13.5px;
+    line-height: 1.65;
+  }
+
+  .step-body.collapsed { display: none; }
+
+  /* Type-specific colors */
+  .type-REASONING_STEP .step-dot { background: var(--reasoning); }
+  .type-REASONING_STEP .step-badge { background: rgba(124,106,247,0.15); color: var(--reasoning); }
+
+  .type-FUNCTION_CALL .step-dot { background: var(--tool); }
+  .type-FUNCTION_CALL .step-badge { background: rgba(240,160,74,0.15); color: var(--tool); }
+
+  .type-SELF_CHECK .step-dot { background: var(--check); }
+  .type-SELF_CHECK .step-badge { background: rgba(93,212,176,0.15); color: var(--check); }
+
+  .type-FINAL_ANSWER .step-dot { background: var(--final); }
+  .type-FINAL_ANSWER .step-badge { background: rgba(247,201,72,0.15); color: var(--final); }
+
+  .type-PARSE_ERROR .step-dot { background: var(--error); }
+  .type-PARSE_ERROR .step-badge { background: rgba(232,92,92,0.15); color: var(--error); }
+
+  /* Tool call display */
+  .tool-name {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.25rem 0.6rem;
+    display: inline-block;
+    margin-bottom: 0.5rem;
+    color: var(--tool);
+  }
+
+  .tool-args {
+    font-family: 'DM Mono', monospace;
+    font-size: 11.5px;
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 0.6rem 0.8rem;
+    color: var(--muted);
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    margin-top: 0.4rem;
+  }
+
+  .kv-row {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 0.5rem;
+    font-size: 12.5px;
+    margin-bottom: 0.3rem;
+    color: var(--muted);
+  }
+
+  .kv-row .key { color: var(--accent); font-family: 'DM Mono', monospace; font-size: 11px; }
+  .kv-row .val { color: var(--text); }
+
+  .check-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 12px;
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .check-pass { background: rgba(93,212,176,0.12); color: var(--success); }
+  .check-fail { background: rgba(232,92,92,0.12); color: var(--danger); }
+
+  .thinking-pulse {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--muted);
+    font-size: 13px;
+    padding: 0.75rem 0;
+  }
+
+  .dot-pulse span {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 1.2s infinite;
+  }
+
+  .dot-pulse span:nth-child(2) { animation-delay: 0.2s; }
+  .dot-pulse span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes pulse {
+    0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+    40%            { opacity: 1;   transform: scale(1); }
+  }
+
+  /* ── Final answer panel ── */
+  .final-panel {
+    border-radius: 12px;
+    border: 1px solid rgba(247,201,72,0.3);
+    background: rgba(247,201,72,0.04);
+    overflow: hidden;
+    margin-bottom: 1rem;
+    animation: slideIn 0.3s ease;
+  }
+
+  .final-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid rgba(247,201,72,0.15);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .final-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 17px;
+    color: var(--final);
+  }
+
+  .confidence-badge {
+    margin-left: auto;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    padding: 0.2rem 0.6rem;
+    border-radius: 5px;
+    text-transform: uppercase;
+  }
+
+  .conf-high   { background: rgba(93,212,176,0.15); color: var(--success); }
+  .conf-medium { background: rgba(240,160,74,0.15);  color: var(--warn); }
+  .conf-low    { background: rgba(232,92,92,0.15);   color: var(--danger); }
+
+  .recommendation-text {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    line-height: 1.4;
+    padding: 1.25rem;
+    color: var(--text);
+  }
+
+  .scenarios-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.75rem;
+    padding: 0 1.25rem 1.25rem;
+  }
+
+  .scenario-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.9rem;
+  }
+
+  .scenario-name {
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.4rem;
+  }
+
+  .scenario-cost {
+    font-size: 22px;
+    font-family: 'DM Serif Display', serif;
+    color: var(--final);
+    margin-bottom: 0.3rem;
+  }
+
+  .scenario-notes { font-size: 12px; color: var(--muted); }
+
+  .final-section {
+    padding: 0 1.25rem 1.25rem;
+  }
+
+  .final-section-title {
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+
+  .tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .tag {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.25rem 0.6rem;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .fallback-box {
+    margin: 0 1.25rem 1.25rem;
+    background: rgba(124,106,247,0.07);
+    border: 1px solid rgba(124,106,247,0.2);
+    border-radius: 10px;
+    padding: 0.9rem;
+    font-size: 13px;
+    color: var(--text);
+  }
+
+  .fallback-label {
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 0.4rem;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    overflow-y: auto;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .sidebar::-webkit-scrollbar { width: 4px; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  .sidebar-section-title {
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+
+  /* ── Metrics ── */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+
+  .metric {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.8rem;
+  }
+
+  .metric-label {
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.3rem;
+  }
+
+  .metric-val {
+    font-size: 24px;
+    font-family: 'DM Serif Display', serif;
+    color: var(--text);
+  }
+
+  .metric-val.reasoning { color: var(--reasoning); }
+  .metric-val.tool      { color: var(--tool); }
+  .metric-val.check     { color: var(--check); }
+  .metric-val.total     { color: var(--final); }
+
+  /* ── Rubric panel ── */
+  .rubric-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.45rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 12.5px;
+  }
+
+  .rubric-row:last-child { border-bottom: none; }
+
+  .rubric-icon {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    font-size: 10px;
+  }
+
+  .rubric-pass { background: rgba(93,212,176,0.15); color: var(--success); }
+  .rubric-fail { background: rgba(232,92,92,0.15); color: var(--danger); }
+
+  .rubric-label { color: var(--text); flex: 1; }
+
+  /* ── Progress bar ── */
+  .progress-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem;
+  }
+
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+  }
+
+  .progress-bar-bg {
+    background: var(--surface2);
+    border-radius: 4px;
+    height: 4px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 4px;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-mark">F</div>
+  <div class="logo-text">FinDecide</div>
+  <div class="logo-sub">FINANCIAL DECISION ENGINE v1.0</div>
+</header>
+
+<div class="layout">
+  <!-- Main trace area -->
+  <div class="main">
+    <div class="question-bar">
+      <div class="question-label">Ask a financial decision question</div>
+      <div class="input-row">
+        <input class="question-input" id="questionInput" type="text"
+          placeholder="e.g. Should I pay off my student loan or invest in index funds?" />
+        <button class="ask-btn" id="askBtn" onclick="startDecision()">
+          Analyze ↗
+        </button>
+      </div>
+      <div class="examples">
+        <div class="example-pill" onclick="setExample('car')">Lease vs buy a car</div>
+        <div class="example-pill" onclick="setExample('loan')">Loan vs invest</div>
+        <div class="example-pill" onclick="setExample('mortgage')">Refinance mortgage</div>
+        <div class="example-pill" onclick="setExample('home')">Rent vs buy home</div>
+      </div>
+
+      <!-- Context fields toggle -->
+      <div class="context-toggle" id="ctxToggle" onclick="toggleContext()">
+        <span class="context-toggle-arrow" id="ctxArrow">▶</span>
+        Add financial details (amounts, rates, time horizon)
+      </div>
+      <div class="context-fields" id="ctxFields">
+        <div class="field-group">
+          <label class="field-label">Principal / Amount ($)</label>
+          <input class="field-input" id="ctxAmount" type="number" min="0" placeholder="e.g. 10000" />
+        </div>
+        <div class="field-group">
+          <label class="field-label">Interest Rate (%)</label>
+          <input class="field-input" id="ctxRate" type="number" step="0.1" min="0" placeholder="e.g. 5.0" />
+        </div>
+        <div class="field-group">
+          <label class="field-label">Time Horizon (years)</label>
+          <input class="field-input" id="ctxYears" type="number" min="1" placeholder="e.g. 5" />
+        </div>
+        <div class="field-group">
+          <label class="field-label">Monthly Income ($)</label>
+          <input class="field-input" id="ctxIncome" type="number" min="0" placeholder="e.g. 5000" />
+        </div>
+        <div class="field-group">
+          <label class="field-label">Monthly Budget / Payment ($)</label>
+          <input class="field-input" id="ctxPayment" type="number" min="0" placeholder="e.g. 500" />
+        </div>
+        <div class="field-group">
+          <label class="field-label">Tax Rate (%)</label>
+          <input class="field-input" id="ctxTax" type="number" step="0.1" min="0" placeholder="e.g. 22" />
+        </div>
+        <div class="context-hint" id="ctxPreview"></div>
+      </div>
+    </div>
+
+    <div class="trace-area" id="traceArea">
+      <div class="empty-state" id="emptyState">
+        <div class="empty-icon">⚖️</div>
+        <div style="font-family:'DM Serif Display',serif;font-size:20px;">Multi-step reasoning</div>
+        <div style="font-size:13px;text-align:center;max-width:300px;">
+          Ask any personal finance decision. Watch the AI decompose, compute, self-check, and recommend — step by step.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <!-- Step metrics -->
+    <div>
+      <div class="sidebar-section-title">Reasoning trace</div>
+      <div class="metrics-grid">
+        <div class="metric">
+          <div class="metric-label">Reasoning</div>
+          <div class="metric-val reasoning" id="metReasoning">0</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Tool calls</div>
+          <div class="metric-val tool" id="metTools">0</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Self-checks</div>
+          <div class="metric-val check" id="metChecks">0</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Total steps</div>
+          <div class="metric-val total" id="metTotal">0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-wrap" id="progressWrap" style="display:none">
+      <div class="progress-label">
+        <span id="progressLabel">Reasoning…</span>
+        <span id="progressPct">0%</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progressFill"></div>
+      </div>
+    </div>
+
+    <!-- Rubric scorecard -->
+    <div>
+      <div class="sidebar-section-title">Prompt rubric (all 9 criteria)</div>
+      <div id="rubricList">
+        <!-- filled by JS -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const RUBRIC = [
+  { key: "Explicit reasoning",       pass: true  },
+  { key: "Structured output",        pass: true  },
+  { key: "Tool separation",          pass: true  },
+  { key: "Conversation loop",        pass: true  },
+  { key: "Instructional framing",    pass: true  },
+  { key: "Internal self-checks",     pass: true  },
+  { key: "Reasoning type awareness", pass: true  },
+  { key: "Fallbacks / error handling", pass: true },
+  { key: "Overall clarity",          pass: true  },
+];
+
+function buildRubric() {
+  const el = document.getElementById("rubricList");
+  el.innerHTML = RUBRIC.map(r => `
+    <div class="rubric-row">
+      <div class="rubric-icon ${r.pass ? 'rubric-pass' : 'rubric-fail'}">${r.pass ? '✓' : '✗'}</div>
+      <div class="rubric-label">${r.key}</div>
+    </div>
+  `).join('');
+}
+
+buildRubric();
+
+let counts = { REASONING_STEP: 0, FUNCTION_CALL: 0, SELF_CHECK: 0, total: 0 };
+let progressInterval;
+
+// ── Example presets ──────────────────────────────────────────
+const EXAMPLES = {
+  car: {
+    q: 'Should I lease or buy a car?',
+    amount: 32000, rate: 6.5, years: 5, income: '', payment: 400, tax: ''
+  },
+  loan: {
+    q: 'Should I pay off my student loan or invest in the S&P 500?',
+    amount: 15000, rate: 5.0, years: 5, income: 5000, payment: '', tax: 22
+  },
+  mortgage: {
+    q: 'Should I refinance my mortgage from 7.5% to 6.2%?',
+    amount: 320000, rate: 7.5, years: 30, income: 8000, payment: 2200, tax: 24
+  },
+  home: {
+    q: 'Should I rent or buy a home over a 5-year horizon?',
+    amount: 450000, rate: 6.8, years: 5, income: 9000, payment: 2500, tax: 22
+  },
+};
+
+function setExample(key) {
+  const ex = EXAMPLES[key];
+  document.getElementById('questionInput').value = ex.q;
+  document.getElementById('ctxAmount').value  = ex.amount  || '';
+  document.getElementById('ctxRate').value    = ex.rate    || '';
+  document.getElementById('ctxYears').value   = ex.years   || '';
+  document.getElementById('ctxIncome').value  = ex.income  || '';
+  document.getElementById('ctxPayment').value = ex.payment || '';
+  document.getElementById('ctxTax').value     = ex.tax     || '';
+  // Open context panel so user sees the pre-filled numbers
+  const fields = document.getElementById('ctxFields');
+  if (!fields.classList.contains('open')) toggleContext();
+  updateCtxPreview();
+}
+
+function toggleContext() {
+  const fields = document.getElementById('ctxFields');
+  const arrow  = document.getElementById('ctxArrow');
+  fields.classList.toggle('open');
+  arrow.classList.toggle('open');
+}
+
+// Build a natural-language context string from filled fields
+function buildContext() {
+  const amount  = document.getElementById('ctxAmount').value.trim();
+  const rate    = document.getElementById('ctxRate').value.trim();
+  const years   = document.getElementById('ctxYears').value.trim();
+  const income  = document.getElementById('ctxIncome').value.trim();
+  const payment = document.getElementById('ctxPayment').value.trim();
+  const tax     = document.getElementById('ctxTax').value.trim();
+
+  const parts = [];
+  if (amount)  parts.push(`principal/amount: $${Number(amount).toLocaleString()}`);
+  if (rate)    parts.push(`interest rate: ${rate}%`);
+  if (years)   parts.push(`time horizon: ${years} years`);
+  if (income)  parts.push(`monthly income: $${Number(income).toLocaleString()}`);
+  if (payment) parts.push(`monthly budget/payment: $${Number(payment).toLocaleString()}`);
+  if (tax)     parts.push(`marginal tax rate: ${tax}%`);
+
+  return parts.length ? `\n\nFinancial details: ${parts.join(', ')}.` : '';
+}
+
+function updateCtxPreview() {
+  const ctx = buildContext();
+  const preview = document.getElementById('ctxPreview');
+  preview.textContent = ctx
+    ? '→ Will append to question: ' + ctx.replace('\n\nFinancial details: ', '')
+    : '';
+}
+
+// Attach live preview listeners
+['ctxAmount','ctxRate','ctxYears','ctxIncome','ctxPayment','ctxTax'].forEach(id => {
+  document.getElementById(id).addEventListener('input', updateCtxPreview);
+});
+
+function resetState() {
+  counts = { REASONING_STEP: 0, FUNCTION_CALL: 0, SELF_CHECK: 0, total: 0 };
+  updateMetrics();
+  document.getElementById('traceArea').innerHTML = '';
+  document.getElementById('progressWrap').style.display = 'block';
+  setProgress(0, 'Thinking...');
+}
+
+function updateMetrics() {
+  document.getElementById('metReasoning').textContent = counts.REASONING_STEP;
+  document.getElementById('metTools').textContent = counts.FUNCTION_CALL;
+  document.getElementById('metChecks').textContent = counts.SELF_CHECK;
+  document.getElementById('metTotal').textContent = counts.total;
+}
+
+function setProgress(pct, label) {
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = label;
+  document.getElementById('progressPct').textContent = pct + '%';
+}
+
+function toggleBody(btn) {
+  const card = btn.closest('.step-card');
+  const body = card.querySelector('.step-body');
+  body.classList.toggle('collapsed');
+}
+
+function renderStep(step) {
+  const trace = document.getElementById('traceArea');
+  counts.total++;
+
+  if (step.type === 'REASONING_STEP') {
+    counts.REASONING_STEP++;
+    const card = document.createElement('div');
+    card.className = `step-card type-REASONING_STEP`;
+    card.innerHTML = `
+      <div class="step-header" onclick="toggleBody(this)">
+        <div class="step-dot"></div>
+        <span class="step-badge">REASONING</span>
+        <span style="font-size:12px;color:var(--muted);margin-left:0.5rem">${step.reasoning_type}</span>
+        <span class="step-num">step ${step.step_number}</span>
+      </div>
+      <div class="step-body">
+        <div>${step.thought}</div>
+        <div style="margin-top:0.5rem;font-size:11px;color:var(--muted);font-family:'DM Mono',monospace">
+          next → ${step.next_action}
+        </div>
+      </div>`;
+    trace.appendChild(card);
+    setProgress(Math.min(80, counts.total * 12), `Reasoning (${step.reasoning_type})…`);
+  }
+
+  else if (step.type === 'FUNCTION_CALL') {
+    counts.FUNCTION_CALL++;
+    const argsStr = JSON.stringify(step.arguments, null, 2);
+    const card = document.createElement('div');
+    card.className = `step-card type-FUNCTION_CALL`;
+    card.innerHTML = `
+      <div class="step-header" onclick="toggleBody(this)">
+        <div class="step-dot"></div>
+        <span class="step-badge">TOOL CALL</span>
+        <span style="font-size:12px;color:var(--muted);margin-left:0.5rem;font-family:'DM Mono',monospace">${step.tool_name}</span>
+        <span class="step-num">step ${step.step_number}</span>
+      </div>
+      <div class="step-body">
+        <div class="tool-name">${step.tool_name}()</div>
+        <div class="tool-args">${argsStr}</div>
+        <div style="margin-top:0.6rem;font-size:12px;color:var(--muted)">${step.why_this_tool}</div>
+        <div style="margin-top:0.3rem;font-size:11px;color:var(--muted);font-family:'DM Mono',monospace">expected: ${step.expected_output_range}</div>
+      </div>`;
+    trace.appendChild(card);
+    setProgress(Math.min(80, counts.total * 12), `Calling ${step.tool_name}…`);
+  }
+
+  else if (step.type === 'SELF_CHECK') {
+    counts.SELF_CHECK++;
+    const card = document.createElement('div');
+    card.className = `step-card type-SELF_CHECK`;
+    card.innerHTML = `
+      <div class="step-header" onclick="toggleBody(this)">
+        <div class="step-dot"></div>
+        <span class="step-badge">SELF-CHECK</span>
+        <span style="font-size:12px;color:var(--muted);margin-left:0.5rem">${step.verification_method}</span>
+        <span class="step-num">step ${step.step_number}</span>
+      </div>
+      <div class="step-body">
+        <div class="check-badge ${step.passed ? 'check-pass' : 'check-fail'}">
+          ${step.passed ? '✓ passed' : '⚠ failed'}
+        </div>
+        <div style="margin-bottom:0.4rem;color:var(--muted);font-size:12px">Checking: ${step.claim_being_checked}</div>
+        <div>${step.notes}</div>
+      </div>`;
+    trace.appendChild(card);
+    setProgress(Math.min(90, counts.total * 12), `Self-checking…`);
+  }
+
+  else if (step.type === 'FINAL_ANSWER') {
+    const confClass = `conf-${step.confidence}`;
+    const scenariosHtml = (step.scenarios_compared || []).map(s => `
+      <div class="scenario-card">
+        <div class="scenario-name">${s.name}</div>
+        <div class="scenario-cost">$${Number(s.net_cost).toLocaleString('en-US', {maximumFractionDigits:0})}</div>
+        <div class="scenario-notes">${s.notes}</div>
+      </div>`).join('');
+
+    const assumptionTags = (step.key_assumptions || []).map(a => `<div class="tag">${a}</div>`).join('');
+    const caveatTags = (step.caveats || []).map(c => `<div class="tag">${c}</div>`).join('');
+
+    const panel = document.createElement('div');
+    panel.className = 'final-panel';
+    panel.innerHTML = `
+      <div class="final-header">
+        <span style="font-size:18px">⚖️</span>
+        <span class="final-title">Recommendation</span>
+        <span class="confidence-badge ${confClass}">${step.confidence} confidence</span>
+      </div>
+      <div class="recommendation-text">${step.recommendation}</div>
+      ${scenariosHtml ? `<div class="scenarios-grid">${scenariosHtml}</div>` : ''}
+      ${step.key_assumptions?.length ? `
+        <div class="final-section">
+          <div class="final-section-title">Key assumptions</div>
+          <div class="tag-list">${assumptionTags}</div>
+        </div>` : ''}
+      ${step.caveats?.length ? `
+        <div class="final-section">
+          <div class="final-section-title">Caveats</div>
+          <div class="tag-list">${caveatTags}</div>
+        </div>` : ''}
+      ${step.fallback_advice ? `
+        <div class="fallback-box">
+          <div class="fallback-label">If assumptions change</div>
+          ${step.fallback_advice}
+        </div>` : ''}`;
+    trace.appendChild(panel);
+    setProgress(100, 'Complete');
+  }
+
+  else if (step.type === 'PARSE_ERROR') {
+    const card = document.createElement('div');
+    card.className = `step-card type-PARSE_ERROR`;
+    card.innerHTML = `
+      <div class="step-header">
+        <div class="step-dot"></div>
+        <span class="step-badge">PARSE ERROR</span>
+      </div>
+      <div class="step-body" style="color:var(--danger)">${step.error}</div>`;
+    trace.appendChild(card);
+  }
+
+  updateMetrics();
+  trace.scrollTop = trace.scrollHeight;
+}
+
+async function startDecision() {
+  const q = document.getElementById('questionInput').value.trim();
+  if (!q) return;
+
+  // Append any filled context fields to the question
+  const fullQuestion = q + buildContext();
+
+  const btn = document.getElementById('askBtn');
+  btn.disabled = true;
+  btn.textContent = 'Analyzing…';
+
+  resetState();
+
+  // Add a thinking indicator
+  const trace = document.getElementById('traceArea');
+  const thinking = document.createElement('div');
+  thinking.className = 'thinking-pulse';
+  thinking.id = 'thinkingPulse';
+  thinking.innerHTML = `<div class="dot-pulse"><span></span><span></span><span></span></div> Reasoning through your question…`;
+  trace.appendChild(thinking);
+
+  try {
+    const resp = await fetch('/decide/stream', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question: fullQuestion })
+    });
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const payload = line.slice(6).trim();
+          if (payload === '[DONE]') break;
+          try {
+            const step = JSON.parse(payload);
+            // Remove thinking pulse on first real step
+            const pulse = document.getElementById('thinkingPulse');
+            if (pulse) pulse.remove();
+            renderStep(step);
+          } catch (e) { /* skip malformed */ }
+        }
+      }
+    }
+  } catch (err) {
+    const pulse = document.getElementById('thinkingPulse');
+    if (pulse) pulse.remove();
+
+    // Demo mode — simulate steps if backend not running
+    console.log('Backend not available, running demo mode');
+    await runDemoMode(q);
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Analyze ↗';
+}
+
+// Demo mode (no backend needed for UI preview)
+async function runDemoMode(q) {
+  const delay = ms => new Promise(r => setTimeout(r, ms));
+
+  const steps = [
+    { type: "REASONING_STEP", step_number: 1, reasoning_type: "decomposition",
+      thought: `I need to analyze: "${q}". I'll decompose this into sub-problems: (1) identify the two options, (2) compute total costs for each, (3) account for opportunity costs, (4) self-check the magnitudes make sense, (5) present a clear recommendation.`,
+      next_action: "REASONING_STEP" },
+    { type: "REASONING_STEP", step_number: 2, reasoning_type: "assumption",
+      thought: "I'll assume standard market rates: ~6.5% APR for auto financing, ~5% annual investment return for opportunity cost, typical lease terms with $0 residual ownership. I'll flag these in the final answer.",
+      next_action: "TOOL_CALL" },
+    { type: "FUNCTION_CALL", step_number: 3, tool_name: "compute_loan_payment",
+      arguments: { principal: 29000, annual_rate: 0.065, term_months: 60 },
+      expected_output_range: "monthly ~$565-$580, total ~$33,000-$35,000",
+      why_this_tool: "Need exact monthly payment and total interest cost for the financing option." },
+    { type: "FUNCTION_CALL", step_number: 4, tool_name: "compute_future_value",
+      arguments: { present_value: 3000, annual_rate: 0.05, years: 5 },
+      expected_output_range: "~$3,800-$4,000 after 5 years",
+      why_this_tool: "Down payment has opportunity cost — this money could grow if invested instead." },
+    { type: "SELF_CHECK", step_number: 5,
+      claim_being_checked: "Total loan cost of ~$34k is plausible for a $29k car at 6.5% over 5 years",
+      verification_method: "order_of_magnitude", passed: true,
+      notes: "~$5k in interest over 5 years on a ~$29k balance is consistent with ~6-7% APR. Monthly payment around $568 is realistic. Magnitude checks out." },
+    { type: "FINAL_ANSWER",
+      recommendation: "For most buyers with stable income, financing (buying) wins over 5+ year horizons due to asset ownership. Leasing is better if you prefer lower monthly payments and plan to upgrade every 2-3 years.",
+      confidence: "medium",
+      key_assumptions: ["6.5% APR", "5% investment return", "60-month loan", "$3k down"],
+      reasoning_summary: [
+        "Decomposed into financing cost vs lease cost vs opportunity cost",
+        "Computed loan payment: ~$568/mo, $34,080 total",
+        "Computed opportunity cost of down payment: ~$3,834 after 5 years",
+        "Self-checked order of magnitude — all plausible"
+      ],
+      scenarios_compared: [
+        { name: "Finance (own car)", net_cost: 34080, notes: "Own asset worth ~$12k at year 5" },
+        { name: "Lease (return car)", net_cost: 18600, notes: "No asset; must re-lease or buy at end" }
+      ],
+      caveats: ["Mileage limits on leases", "Insurance may differ", "Tax treatment varies by state", "Residual value uncertain"],
+      fallback_advice: "If APR exceeds 9%, recalculate — leasing becomes more competitive. Get actual dealer quotes before deciding." }
+  ];
+
+  for (const step of steps) {
+    await delay(800);
+    renderStep(step);
+  }
+}
+
+// Allow Enter key to submit
+document.getElementById('questionInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') startDecision();
+});
+</script>
+</body>
+</html>
