@@ -274,7 +274,7 @@ For "Should I pay off my 5% student loan or invest in the S&P 500?":
 
 ## Demo
 
-🎬 **[YouTube Demo](https://youtube.com/YOUR_LINK_HERE)**
+🎬 **[YouTube Demo](https://youtu.be/uXubGVrChuY)**
 
 The demo shows:
 
