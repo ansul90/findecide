@@ -56,19 +56,17 @@ Full evaluation: `[prompts/rubric_evaluation.json](prompts/rubric_evaluation.jso
 
 ## How the prompt qualifies the rubric
 
-
-| Criterion                    | How satisfied                                                                                                 |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| **Explicit reasoning**       | Rule 1 mandates ≥2 `REASONING_STEP` blocks before any tool call                                               |
-| **Structured output**        | 4 strict JSON schemas (`REASONING_STEP`, `FUNCTION_CALL`, `SELF_CHECK`, `FINAL_ANSWER`) validated by Pydantic |
-| **Tool separation**          | `REASONING_STEP` and `FUNCTION_CALL` are distinct schemas; mental math explicitly banned in Rule 2            |
-| **Conversation loop**        | Rule 7 addresses multi-turn; `step_number` is monotonically increasing; tool results injected as context      |
-| **Instructional framing**    | Full 6-turn worked example with exact JSON for all 4 schemas                                                  |
-| **Internal self-checks**     | `SELF_CHECK` is a first-class response type; Rule 4 makes it **mandatory** before `FINAL_ANSWER`              |
-| **Reasoning type awareness** | `reasoning_type` is a required field with 7 defined literals on every reasoning step                          |
-| **Fallbacks**                | Rule 6 specifies tool-failure handling; `fallback_advice` is a **required field** in `FINAL_ANSWER`           |
-| **Overall clarity**          | Self-contained prompt; zero ambiguity; schema enforcement reduces hallucination and drift                     |
-
+| Criterion | How satisfied |
+|---|---|
+| **Explicit reasoning** | Rule 1 mandates ≥2 `REASONING_STEP` blocks before any tool call |
+| **Structured output** | 4 strict JSON schemas (`REASONING_STEP`, `FUNCTION_CALL`, `SELF_CHECK`, `FINAL_ANSWER`) validated by Pydantic |
+| **Tool separation** | `REASONING_STEP` and `FUNCTION_CALL` are distinct schemas; mental math explicitly banned in Rule 2 |
+| **Conversation loop** | Rule 7 addresses multi-turn; `step_number` is monotonically increasing; tool results injected as context |
+| **Instructional framing** | Full 6-turn worked example with exact JSON for all 4 schemas |
+| **Internal self-checks** | `SELF_CHECK` is a first-class response type; Rule 4 makes it **mandatory** before `FINAL_ANSWER` |
+| **Reasoning type awareness** | `reasoning_type` is a required field with 7 defined literals on every reasoning step |
+| **Fallbacks** | Rule 6 specifies tool-failure handling; `fallback_advice` is a **required field** in `FINAL_ANSWER` |
+| **Overall clarity** | Self-contained prompt; zero ambiguity; schema enforcement reduces hallucination and drift |
 
 ---
 
@@ -93,20 +91,17 @@ Full evaluation: `[prompts/rubric_evaluation.json](prompts/rubric_evaluation.jso
 │  Conversation loop (up to 20 turns)     │
 │  Pydantic validation on every response  │
 │  Tool dispatch on FUNCTION_CALL steps   │
-└──────┬───────────────────────┬──────────┘
-       │                       │
-       ▼                       ▼
-┌─────────────┐    ┌───────────────────────┐
-│  Claude API │    │  MCP Tools            │
-│  (LLM)      │    │  compute_loan_payment │
-└─────────────┘    │  compute_lease_total  │
-                   │  compute_future_value │
-                   │  compute_npv          │
-                   │  compute_break_even   │
-                   │  compute_tax_savings  │
-                   │  sanity_check         │
-                   └───────────────────────┘
+└──────┬──────────────────────────────────┘
+       │
+       ├── gemini   → Google Gemini via google-genai SDK
+       ├── ollama   → Local Ollama (/api/chat)
+       └── external → LLM Gateway V2 (/v1/chat)
+                      (gemini · nvidia · groq · cerebras
+                       openrouter · github · ollama)
 ```
+
+Set `LLM_PROVIDER` in `.env` to choose the top-level provider.  
+When using `external`, the LLM Gateway handles its own provider routing.
 
 ### Response types (Pydantic-validated)
 
@@ -124,85 +119,127 @@ FINAL_ANSWER    →  Structured recommendation with scenarios + caveats
 ```
 findecide/
 ├── README.md
-├── requirements.txt
+├── pyproject.toml                    ← dependencies (managed by uv)
+├── uv.lock
+├── .env                              ← local config (not committed)
 ├── prompts/
-│   ├── system_prompt.md          ← the qualifying prompt
-│   └── rubric_evaluation.json    ← Claude's rubric evaluation
+│   ├── system_prompt.md              ← the qualifying prompt
+│   └── rubric_evaluation.json        ← Claude's rubric evaluation
 ├── server/
-│   ├── schemas.py                ← Pydantic models for all 4 response types
-│   ├── orchestrator.py           ← multi-turn reasoning loop
-│   ├── api.py                    ← FastAPI server with SSE streaming
+│   ├── schemas.py                    ← Pydantic models for all 4 response types
+│   ├── orchestrator.py               ← multi-turn reasoning loop + provider backends
+│   ├── api.py                        ← FastAPI server with SSE streaming
 │   └── mcp_tools/
-│       └── server.py             ← MCP tool server (7 finance tools)
+│       └── server.py                 ← 7 finance calculation tools
 └── web/
-    └── index.html                ← streaming web UI
+    └── index.html                    ← streaming web UI
 ```
 
 ---
 
 ## Running locally
 
-This project uses `[uv](https://docs.astral.sh/uv/)` for fast, reproducible dependency management.
+This project uses [`uv`](https://docs.astral.sh/uv/) for fast, reproducible dependency management.
 
-### 0. Install uv (if needed)
+### 1. Install uv (if needed)
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-### 1. Create a virtual environment and install dependencies
+### 2. Install dependencies
 
 ```bash
 uv sync
 ```
 
-This reads `pyproject.toml`, creates a `.venv` automatically, and installs all dependencies in one step.
+### 3. Configure your provider
 
-### 2. Set your API key
+Create a `.env` file in the project root. Choose one of the three providers:
 
-```bash
-export ANTHROPIC_API_KEY=sk-ant-...
+**Option A — Google Gemini (cloud)**
+```
+LLM_PROVIDER=gemini
+GEMINI_API_KEY=your_key_here
+GEMINI_MODEL=gemini-2.5-flash
 ```
 
-Or create a `.env` file in the project root:
-
+**Option B — Ollama (local)**
 ```
-ANTHROPIC_API_KEY=sk-ant-...
+LLM_PROVIDER=ollama
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=gemma4:26b-a4b-it-q4_K_M
 ```
 
-### 3. Start the server
+**Option C — LLM Gateway V2**
+```
+LLM_PROVIDER=external
+EXTERNAL_BASE_URL=http://0.0.0.0:8100
+# EXTERNAL_PROVIDER=cerebras   # optional: pin a specific gateway backend
+# EXTERNAL_MODEL=              # optional: pin a specific model within that backend
+```
+
+The gateway at port 8100 supports multiple backends with a built-in fallback order:
+`gemini → nvidia → groq → cerebras → openrouter → github → ollama`
+
+> **Note on provider selection for multi-turn reasoning:**  
+> The orchestrator runs up to 20 sequential LLM calls per question. If you pin
+> `EXTERNAL_PROVIDER`, prefer **cerebras** (60k TPM) over groq (6k TPM) — groq
+> exhausts its per-minute token budget after ~2 turns with this prompt size.
+> Gemini 2.5 Flash uses thinking tokens by default; the gateway call explicitly
+> sets `reasoning: off` to prevent thinking from consuming the output budget.
+
+### 4. Start the server
 
 ```bash
 uv run uvicorn server.api:app --reload --port 8000
 ```
 
-### 4. Open the app
+### 5. Open the app
 
 Visit `http://localhost:8000` in your browser.
 
-### 5. Run the CLI (optional)
+### 6. Run the CLI (optional)
 
 ```bash
 uv run python -m server.orchestrator "Should I pay off my 5% loan or invest?"
 ```
 
-> **Tip:** `uv run` automatically uses the project's virtual environment without needing to activate it first.
+> `uv run` automatically uses the project's virtual environment without needing to activate it first.
 
 ---
 
-## User questionMCP Tools
+## MCP Tools
 
+| Tool | Purpose |
+|---|---|
+| `compute_loan_payment` | Monthly payment, total paid, total interest |
+| `compute_lease_total_cost` | Full lease outlay (payments + fees + down) |
+| `compute_future_value` | Compound growth / opportunity cost |
+| `compute_npv` | Net Present Value of cash flow series |
+| `compute_break_even` | How many months until Option A beats Option B |
+| `compute_tax_savings` | Annual savings from a deductible expense |
+| `sanity_check` | Verify a computed value is in an expected range |
 
-| Tool                       | Purpose                                         |
-| -------------------------- | ----------------------------------------------- |
-| `compute_loan_payment`     | Monthly payment, total paid, total interest     |
-| `compute_lease_total_cost` | Full lease outlay (payments + fees + down)      |
-| `compute_future_value`     | Compound growth / opportunity cost              |
-| `compute_npv`              | Net Present Value of cash flow series           |
-| `compute_break_even`       | How many months until Option A beats Option B   |
-| `compute_tax_savings`      | Annual savings from a deductible expense        |
-| `sanity_check`             | Verify a computed value is in an expected range |
+---
 
+## API Endpoints
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/` | GET | Web UI |
+| `/decide/stream` | POST | SSE stream of reasoning steps |
+| `/decide` | POST | Non-streaming, returns full result |
+| `/health` | GET | Server status + active provider config |
+
+**Request body** (`/decide` and `/decide/stream`):
+```json
+{
+  "question": "Should I lease or buy a $32k car?",
+  "provider": "external"
+}
+```
+`provider` is optional — omit to use `LLM_PROVIDER` from `.env`.
 
 ---
 
@@ -258,4 +295,3 @@ The demo shows:
 - Web app with live streaming UI
 - README with prompt + rubric evaluation
 - YouTube demo link
-
